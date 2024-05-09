@@ -1,13 +1,9 @@
 import bcrypt from 'bcryptjs';
 const salt=bcrypt.genSaltSync(10)
-import mysql from 'mysql2' ;
+import mysql from 'mysql2/promise' ;
+import bluebird from 'bluebird';
 
-// Create the connection to database
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    database: 'jwt',
-  });
+
 
 const hashUserPassword = (userPassword) =>{
     let hashPassword=bcrypt.hashSync(userPassword,salt);
@@ -20,23 +16,36 @@ let hashPass =hashUserPassword(password);
         'INSERT INTO users (email, password, username) VALUES (?,?,?)', [email, hashPass, username],
         function(err,results,fields) {
             if (err) {
-                console.log(err)
+                console.log(err)     
             }
+            
         }
     );
 }
 
-const getUserList=() =>{
+const getUserList=async () =>{
+    const connection=await mysql.createConnection( {host: 'localhost', user: 'root', database: 'jwt', Promise: bluebird} )
+
     let users=[];
-    connection.query(
-        'Select * from users ',
-        function(err,results,fields) {
-            if (err) {
-                console.log(err)
-            }
-            console.log('check results',results)
-        }
-    );
+    //  connection.query(
+    //     'Select * from users ',
+    //     function(err,results,fields) {
+    //         if (err) {
+    //             console.log(err);
+    //             return users;
+    //         }
+    //         users=results;
+    //         return users;
+    //     }
+    // );
+    try{
+        const [rows,fields] =await connection.execute('Select * from users');
+      return rows;
+    }catch(error) {
+console.log('>>check error',error)
+    };
+
+    
 }
 
 module.exports={
